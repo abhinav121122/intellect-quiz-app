@@ -88,6 +88,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-Your Name - your.email@example.com
+Your Name - Abhinav Singh
 
 Project Link: [https://github.com/abhinav121122/intellect-quiz-app](https://github.com/abhinav121122/intellect-quiz-app)
