@@ -32,7 +32,7 @@ An AI-powered quiz generator that transforms documents and text into interactive
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/intellect-quiz-app.git
+git clone https://github.com/abhinav121122/intellect-quiz-app.git
 cd intellect-quiz-app
 ```
 
@@ -90,4 +90,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Your Name - your.email@example.com
 
-Project Link: [https://github.com/YOUR_USERNAME/intellect-quiz-app](https://github.com/YOUR_USERNAME/intellect-quiz-app)
+Project Link: [https://github.com/abhinav121122/intellect-quiz-app](https://github.com/abhinav121122/intellect-quiz-app)
