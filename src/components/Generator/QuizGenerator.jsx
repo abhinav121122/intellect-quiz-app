@@ -51,68 +51,199 @@ const QuizGenerator = () => {
   };
 
   const generateQuizWithAI = async (text, options) => {
-    const prompt = `Based on the following text, please generate a quiz with the following parameters:
-- Number of Questions: ${options.numberOfQuestions}
-- Difficulty: ${options.difficulty}
-- Question Types: ${JSON.stringify(options.questionTypes)}
+    const prompt = `You are an expert quiz creator. Generate exactly ${options.numberOfQuestions} high-quality quiz questions based on the provided text.
 
-Your response MUST be a valid JSON object. The JSON object should be an array of question objects, where each object has the following structure:
+REQUIREMENTS:
+- Generate EXACTLY ${options.numberOfQuestions} questions (no more, no less)
+- Difficulty level: ${options.difficulty}
+- Question types to include: ${JSON.stringify(options.questionTypes)}
+
+QUESTION VARIETY (for Multiple Choice):
+Create a diverse mix of question types:
+- Direct questions ("Who was...", "What is...", "Where did...")
+- "Which of the following is NOT..." questions
+- "All of the following are true EXCEPT..." questions
+- Statement-based questions ("Statement 1: ... Statement 2: ... Which is correct?")
+- Matching questions formatted as MCQs ("Which option correctly matches...")
+- Cause and effect questions ("What was the result of...")
+- Definition questions ("What does [term] mean in this context?")
+
+PLAUSIBLE DISTRACTORS (for Multiple Choice):
+- Use other names, dates, places, or facts from the source material as incorrect options
+- Make distractors relevant and challenging (not obviously wrong)
+- Include numbers/dates that are close to but not exactly correct
+- Use similar-sounding terms or concepts from the text
+
+BALANCED ANSWER DISTRIBUTION:
+- Distribute correct answers evenly among options A, B, C, D
+- Don't make option A or C always correct
+
+DIFFICULTY GUIDELINES:
+- ${options.difficulty === 'Easy' ? 'Use direct facts from text, simple recall questions' : ''}
+- ${options.difficulty === 'Medium' ? 'Require understanding and basic analysis, some inference' : ''}
+- ${options.difficulty === 'Hard' ? 'Require critical thinking, analysis, synthesis of multiple concepts' : ''}
+
+JSON FORMAT:
+Return exactly ${options.numberOfQuestions} questions in this format:
 {
-  "questionText": "The main topic of the text is...",
+  "questionText": "Your question here",
   "type": "Multiple Choice", // or "True/False" or "Fill in the Blank"
-  "options": ["Option A", "Option B", "Option C", "Option D"], // Only for "Multiple Choice" type
-  "correctAnswer": "Option A", // For MCQ, or "True"/"False" for T/F, or the correct word/phrase for fill-in-the-blank
-  "explanation": "The text repeatedly mentions this concept, indicating it's the main topic."
+  "options": ["Option A", "Option B", "Option C", "Option D"], // Only for Multiple Choice
+  "correctAnswer": "Option A", // The exact text of correct answer
+  "explanation": "Detailed explanation why this is correct and others are wrong"
 }
 
-Important: 
-- For "True/False" questions, do not include an "options" field, just "correctAnswer" as "True" or "False"
-- For "Fill in the Blank" questions, the questionText should contain "____" where the answer goes
-- Ensure all questions are relevant to the provided text
-- Make sure the difficulty matches the requested level
+IMPORTANT RULES:
+- For True/False: NO "options" field, just "correctAnswer": "True" or "False"
+- For Fill in the Blank: questionText contains "____", correctAnswer is the missing word/phrase
+- Each explanation should be detailed and educational
+- Questions must be factually accurate based on the source text
+- Avoid repetitive question patterns
 
-Here is the text:
+SOURCE TEXT:
 ---
 ${text}
 ---
 
-Respond with ONLY the JSON array, no other text.`;
+Generate exactly ${options.numberOfQuestions} questions as a JSON array:`;
 
     try {
-      // This is a placeholder for the AI API call
-      // Replace this with actual API integration (e.g., Google Gemini, OpenAI, etc.)
+      console.log('Generating quiz with AI...');
+      
+      // Call our secure serverless function
       const response = await fetch('/api/generate-quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_GEMINI_API_KEY}`
         },
         body: JSON.stringify({ prompt })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate quiz');
+        console.error('API response not ok:', response.status);
+        throw new Error(`Failed to generate quiz: ${response.status}`);
       }
 
       const data = await response.json();
-      return JSON.parse(data.response || data.choices?.[0]?.message?.content || '[]');
+      console.log('AI response received:', data);
+      
+      // The serverless function returns { questions: [...] }
+      if (data.questions && Array.isArray(data.questions)) {
+        return data.questions;
+      }
+      
+      throw new Error('Invalid response format from AI');
+      
     } catch (error) {
       console.error('AI Generation Error:', error);
+      console.log('Falling back to demo questions...');
       
-      // Fallback: Generate a sample quiz for demo purposes
-      return [
+      // Fallback: Generate smart demo questions based on content
+      const fallbackQuestions = [];
+      const wordCount = text.split(/\s+/).length;
+      
+             // Generate the exact number of requested demo questions
+       const questionsToGenerate = options.numberOfQuestions;
+       
+       const questionTemplates = {
+         'Multiple Choice': [
+           {
+             questionText: "What is the primary focus of the provided text?",
+             options: ["Scientific concepts", "Historical events", "Literary analysis", "Technical procedures"],
+             correctAnswer: "Scientific concepts",
+             explanation: "Based on content analysis, scientific concepts appear to be the main focus."
+           },
+           {
+             questionText: "Which of the following is NOT typically discussed in this type of content?",
+             options: ["Core concepts", "Detailed explanations", "Unrelated topics", "Supporting examples"],
+             correctAnswer: "Unrelated topics",
+             explanation: "The text focuses on relevant topics rather than unrelated material."
+           },
+           {
+             questionText: "What can be inferred about the complexity level of this content?",
+             options: ["Very basic", "Intermediate to advanced", "Expert level only", "Beginner friendly"],
+             correctAnswer: "Intermediate to advanced",
+             explanation: "The content appears to require some background knowledge to fully understand."
+           },
+           {
+             questionText: "All of the following are true about the text EXCEPT:",
+             options: ["It contains factual information", "It provides explanations", "It lacks coherent structure", "It covers specific topics"],
+             correctAnswer: "It lacks coherent structure",
+             explanation: "The text demonstrates clear organization and logical flow."
+           }
+         ],
+         'True/False': [
+           {
+             questionText: "The provided text contains detailed information about its subject matter.",
+             correctAnswer: "True",
+             explanation: "The text provides comprehensive coverage of the discussed topics."
+           },
+           {
+             questionText: "The content is written for a general audience without specific knowledge.",
+             correctAnswer: "False",
+             explanation: "The content appears to require some background knowledge in the field."
+           },
+           {
+             questionText: "The text follows a logical progression of ideas.",
+             correctAnswer: "True",
+             explanation: "The information is presented in an organized, sequential manner."
+           },
+           {
+             questionText: "The content lacks supporting details and examples.",
+             correctAnswer: "False",
+             explanation: "The text includes relevant details and explanations to support main points."
+           }
+         ],
+         'Fill in the Blank': [
+           {
+             questionText: "The text primarily discusses ____ related concepts.",
+             correctAnswer: "technical",
+             explanation: "Based on content analysis, technical concepts are the main focus."
+           },
+           {
+             questionText: "The information presented appears to be ____ in nature.",
+             correctAnswer: "educational",
+             explanation: "The text serves an informational or educational purpose."
+           },
+           {
+             questionText: "The level of detail suggests the content is intended for ____ readers.",
+             correctAnswer: "knowledgeable",
+             explanation: "The depth of information indicates it's aimed at informed readers."
+           }
+         ]
+       };
+       
+       let questionIndex = 0;
+       for (let i = 0; i < questionsToGenerate; i++) {
+         const availableTypes = options.questionTypes.filter(type => questionTemplates[type]);
+         if (availableTypes.length === 0) continue;
+         
+         const selectedType = availableTypes[i % availableTypes.length];
+         const typeTemplates = questionTemplates[selectedType];
+         const template = typeTemplates[questionIndex % typeTemplates.length];
+         
+         const question = {
+           questionText: template.questionText,
+           type: selectedType,
+           correctAnswer: template.correctAnswer,
+           explanation: `${template.explanation} (Demo question ${i + 1})`
+         };
+         
+         if (selectedType === 'Multiple Choice') {
+           question.options = template.options;
+         }
+         
+         fallbackQuestions.push(question);
+         questionIndex++;
+       }
+      
+      return fallbackQuestions.length > 0 ? fallbackQuestions : [
         {
           questionText: "What is the main topic discussed in the provided text?",
           type: "Multiple Choice",
           options: ["Science", "History", "Literature", "Technology"],
           correctAnswer: "Science",
-          explanation: "Based on the content analysis, this appears to be the primary focus."
-        },
-        {
-          questionText: "The information provided is comprehensive and detailed.",
-          type: "True/False",
-          correctAnswer: "True",
-          explanation: "The text contains detailed information on the subject matter."
+          explanation: "Demo question - AI generation failed, but quiz functionality works!"
         }
       ];
     }

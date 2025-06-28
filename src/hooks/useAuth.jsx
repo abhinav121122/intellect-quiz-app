@@ -44,15 +44,24 @@ export const AuthProvider = ({ children }) => {
     const userCredential = await signInWithPopup(auth, provider);
     const user = userCredential.user;
     
-    // Check if user document exists, create if not
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    if (!userDoc.exists()) {
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        createdAt: new Date()
-      });
+    try {
+      // Check if user document exists, create if not
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        console.log('Creating user document for:', user.email);
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          createdAt: new Date()
+        });
+        console.log('User document created successfully');
+      } else {
+        console.log('User document already exists');
+      }
+    } catch (error) {
+      console.error('Error handling user document:', error);
+      // Don't throw error - allow login to continue
     }
     
     return userCredential;

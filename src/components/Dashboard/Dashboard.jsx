@@ -8,28 +8,42 @@ import QuizListItem from './QuizListItem';
 const Dashboard = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
 
+    console.log('Loading quizzes for user:', currentUser.uid);
+    
     const q = query(
       collection(db, 'quizzes'),
       where('userId', '==', currentUser.uid),
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const quizzesData = [];
-      querySnapshot.forEach((doc) => {
-        quizzesData.push({
-          id: doc.id,
-          ...doc.data()
+    const unsubscribe = onSnapshot(q, 
+      (querySnapshot) => {
+        console.log('Firestore query successful, found:', querySnapshot.size, 'quizzes');
+        const quizzesData = [];
+        querySnapshot.forEach((doc) => {
+          quizzesData.push({
+            id: doc.id,
+            ...doc.data()
+          });
         });
-      });
-      setQuizzes(quizzesData);
-      setLoading(false);
-    });
+        setQuizzes(quizzesData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Firestore query error:', error);
+        setError('Failed to load quizzes: ' + error.message);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, [currentUser]);
@@ -37,7 +51,30 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your dashboard...</p>
+          <p className="text-sm text-gray-500 mt-2">If this takes too long, check the browser console for errors</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg mb-4">
+            <h3 className="font-bold">Dashboard Error</h3>
+            <p className="mt-2">{error}</p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            Reload Page
+          </button>
+        </div>
       </div>
     );
   }
